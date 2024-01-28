@@ -37,7 +37,7 @@ public class UsersController : Controller
     public IActionResult GetAllWithBalanceTransactions()
     {
         return Ok(_userRepository.GetAll(
-            include:user=>user.Include(u=>u.AccountTransactions)
+            include: user => user.Include(u => u.AccountTransactions)
             ));
     }
     [HttpGet("GetAllWithOrders")]
@@ -45,8 +45,8 @@ public class UsersController : Controller
     {
         return Ok(_userRepository.GetAll(
             include: user => user
-                    .Include(u => u.Orders).ThenInclude(o=>o.OrderDetails).ThenInclude(od=>od.ProductTransaction)
-                    .Include(u=>u.Orders).ThenInclude(o=>o.OrderDetails).ThenInclude(od=>od.Product).ThenInclude(p=>p.Category)
+                    .Include(u => u.Orders).ThenInclude(o => o.OrderDetails).ThenInclude(od => od.ProductTransaction)
+                    .Include(u => u.Orders).ThenInclude(o => o.OrderDetails).ThenInclude(od => od.Product).ThenInclude(p => p.Category)
             ));
     }
     [HttpGet("GetAllWithAllDetails")]
@@ -56,34 +56,41 @@ public class UsersController : Controller
             include: user => user
                     .Include(u => u.Orders).ThenInclude(o => o.OrderDetails).ThenInclude(od => od.ProductTransaction)
                     .Include(u => u.Orders).ThenInclude(o => o.OrderDetails).ThenInclude(od => od.Product).ThenInclude(p => p.Category)
-                    .Include(u=>u.AccountTransactions)
+                    .Include(u => u.AccountTransactions)
             ));
     }
 
     [HttpGet("GetById/{id}")]
     public IActionResult Get(Guid id)
     {
-        return Ok(_userRepository.Get(user=>user.Id==id));
+        return Ok(_userRepository.Get(user => user.Id == id));
     }
 
     [HttpPost("Add")]
     public async Task<IActionResult> AddAsync([FromBody] User user)
     {
-       
+
         using (KPSPublicSoapClient soapClient = new KPSPublicSoapClient(EndpointConfiguration.KPSPublicSoap12))
         {
-            
-            var result = await soapClient.TCKimlikNoDogrulaAsync(long.Parse(user.IdentificationNumber), user.FirstName, user.LastName, user.BirthYear);
-            if (result.Body.TCKimlikNoDogrulaResult)
+            if (!long.TryParse(user.IdentificationNumber, out long id))
             {
-                return Ok(_userRepository.Add(user));
+                return BadRequest("Lütfen sayı giriniz.");
+
             }
             else
             {
-                return BadRequest("Kimlik Bilgileri Hatalı");
-           }
+                var result = await soapClient.TCKimlikNoDogrulaAsync(id, user.FirstName, user.LastName, user.BirthYear);
+                if (result.Body.TCKimlikNoDogrulaResult)
+                {
+                    return Ok(_userRepository.Add(user));
+
+                }
+                else    
+                    return BadRequest("Kimlik Bilgileri Hatalı");
+
+            }
         }
-      
+
     }
     [HttpPost("AddBalance")]
     public IActionResult Add([FromBody] AccountTransaction accountTransaction)
