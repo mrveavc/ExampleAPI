@@ -80,8 +80,7 @@ public class UsersController : Controller
             }
             else
             {
-                return BadRequest("Kimlik Bilgileri Hatalı");
-           }
+            }
         }
       
     }
